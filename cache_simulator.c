@@ -31,6 +31,13 @@ typedef struct {
     char replacement_policy; // Política de substituição ('R', 'F', 'L', 'U')
 } Cache;
 
+// Protótipos de funções
+Cache* init_cache(int num_sets, int block_size, int assoc, char replacement_policy);
+int access_cache(Cache *cache, unsigned int address, int access_type, int *hit, int *miss, int *miss_comp, int *miss_conf, int *miss_cap);
+void replace_line(Cache *cache, int index, unsigned int tag);
+void read_address_file(const char *filename, Cache *cache);
+void print_stats(int total_accesses, int hit, int miss, int miss_comp, int miss_conf, int miss_cap, int flagOut);
+
 // Função de inicialização da cache
 Cache* init_cache(int num_sets, int block_size, int assoc, char replacement_policy) {
     Cache *cache = (Cache*) malloc(sizeof(Cache));
@@ -85,11 +92,9 @@ int access_cache(Cache *cache, unsigned int address, int access_type, int *hit, 
             *hit += 1;
             set->lines[i].last_used = global_time++;
             set->lines[i].frequency++;  // Atualiza frequência para LFU
-            
+
             if (access_type == WRITE) {
                 // Implementar lógica para escrita (write-through ou write-back)
-                // Por exemplo, para write-through:
-                // printf("Escrevendo na memória principal: endereço %u\n", address);
             }
             
             return 1;  // Cache hit
@@ -99,10 +104,10 @@ int access_cache(Cache *cache, unsigned int address, int access_type, int *hit, 
     // Caso contrário, é um miss
     *miss += 1;
 
-    // Verifica se o miss é compulsório, de conflito ou de capacidade
+    // Verifica se o miss é compulsório
     for (int i = 0; i < cache->assoc; i++) {
         if (!set->lines[i].valid) {
-            *miss_comp += 1;
+            *miss_comp += 1;  // Contagem de miss compulsório
             found_free_line = 1;
             break;
         }
@@ -133,8 +138,6 @@ int access_cache(Cache *cache, unsigned int address, int access_type, int *hit, 
 
     if (access_type == WRITE) {
         // Implementar lógica para escrita (write-through ou write-back)
-        // Por exemplo, para write-through:
-        // printf("Escrevendo na memória principal: endereço %u\n", address);
     }
 
     return 0;  // Cache miss
@@ -210,9 +213,9 @@ void read_address_file(const char *filename, Cache *cache) {
 void print_stats(int total_accesses, int hit, int miss, int miss_comp, int miss_conf, int miss_cap, int flagOut) {
     float hit_rate = (float) hit / total_accesses;
     float miss_rate = (float) miss / total_accesses;
-    float comp_rate = miss > 0 ? (float) miss_comp / miss : 0;
-    float conf_rate = miss > 0 ? (float) miss_conf / miss : 0;
-    float cap_rate = miss > 0 ? (float) miss_cap / miss : 0;
+    float comp_rate = (miss > 0) ? (float) miss_comp / miss : 0;
+    float conf_rate = (miss > 0) ? (float) miss_conf / miss : 0;
+    float cap_rate = (miss > 0) ? (float) miss_cap / miss : 0;
 
     if (flagOut == 0) {
         printf("Total de acessos: %d\n", total_accesses);
